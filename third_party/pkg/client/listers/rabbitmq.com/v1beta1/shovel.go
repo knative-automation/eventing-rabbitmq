@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 // ShovelLister helps list Shovels.
@@ -30,7 +30,7 @@ import (
 type ShovelLister interface {
 	// List lists all Shovels in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Shovel, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Shovel, err error)
 	// Shovels returns an object that can list and get Shovels.
 	Shovels(namespace string) ShovelNamespaceLister
 	ShovelListerExpansion
@@ -38,25 +38,17 @@ type ShovelLister interface {
 
 // shovelLister implements the ShovelLister interface.
 type shovelLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Shovel]
 }
 
 // NewShovelLister returns a new ShovelLister.
 func NewShovelLister(indexer cache.Indexer) ShovelLister {
-	return &shovelLister{indexer: indexer}
-}
-
-// List lists all Shovels in the indexer.
-func (s *shovelLister) List(selector labels.Selector) (ret []*v1beta1.Shovel, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Shovel))
-	})
-	return ret, err
+	return &shovelLister{listers.New[*rabbitmqcomv1beta1.Shovel](indexer, rabbitmqcomv1beta1.Resource("shovel"))}
 }
 
 // Shovels returns an object that can list and get Shovels.
 func (s *shovelLister) Shovels(namespace string) ShovelNamespaceLister {
-	return shovelNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return shovelNamespaceLister{listers.NewNamespaced[*rabbitmqcomv1beta1.Shovel](s.ResourceIndexer, namespace)}
 }
 
 // ShovelNamespaceLister helps list and get Shovels.
@@ -64,36 +56,15 @@ func (s *shovelLister) Shovels(namespace string) ShovelNamespaceLister {
 type ShovelNamespaceLister interface {
 	// List lists all Shovels in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Shovel, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Shovel, err error)
 	// Get retrieves the Shovel from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.Shovel, error)
+	Get(name string) (*rabbitmqcomv1beta1.Shovel, error)
 	ShovelNamespaceListerExpansion
 }
 
 // shovelNamespaceLister implements the ShovelNamespaceLister
 // interface.
 type shovelNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Shovels in the indexer for a given namespace.
-func (s shovelNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.Shovel, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Shovel))
-	})
-	return ret, err
-}
-
-// Get retrieves the Shovel from the indexer for a given namespace and name.
-func (s shovelNamespaceLister) Get(name string) (*v1beta1.Shovel, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("shovel"), name)
-	}
-	return obj.(*v1beta1.Shovel), nil
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Shovel]
 }

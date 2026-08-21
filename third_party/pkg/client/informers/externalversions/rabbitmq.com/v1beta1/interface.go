@@ -30,6 +30,8 @@ type Interface interface {
 	Exchanges() ExchangeInformer
 	// Federations returns a FederationInformer.
 	Federations() FederationInformer
+	// OperatorPolicies returns a OperatorPolicyInformer.
+	OperatorPolicies() OperatorPolicyInformer
 	// Permissions returns a PermissionInformer.
 	Permissions() PermissionInformer
 	// Policies returns a PolicyInformer.
@@ -70,6 +72,11 @@ func (v *version) Exchanges() ExchangeInformer {
 // Federations returns a FederationInformer.
 func (v *version) Federations() FederationInformer {
 	return &federationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// OperatorPolicies returns a OperatorPolicyInformer.
+func (v *version) OperatorPolicies() OperatorPolicyInformer {
+	return &operatorPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Permissions returns a PermissionInformer.

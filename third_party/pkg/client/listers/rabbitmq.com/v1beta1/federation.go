@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 // FederationLister helps list Federations.
@@ -30,7 +30,7 @@ import (
 type FederationLister interface {
 	// List lists all Federations in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Federation, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Federation, err error)
 	// Federations returns an object that can list and get Federations.
 	Federations(namespace string) FederationNamespaceLister
 	FederationListerExpansion
@@ -38,25 +38,17 @@ type FederationLister interface {
 
 // federationLister implements the FederationLister interface.
 type federationLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Federation]
 }
 
 // NewFederationLister returns a new FederationLister.
 func NewFederationLister(indexer cache.Indexer) FederationLister {
-	return &federationLister{indexer: indexer}
-}
-
-// List lists all Federations in the indexer.
-func (s *federationLister) List(selector labels.Selector) (ret []*v1beta1.Federation, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Federation))
-	})
-	return ret, err
+	return &federationLister{listers.New[*rabbitmqcomv1beta1.Federation](indexer, rabbitmqcomv1beta1.Resource("federation"))}
 }
 
 // Federations returns an object that can list and get Federations.
 func (s *federationLister) Federations(namespace string) FederationNamespaceLister {
-	return federationNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return federationNamespaceLister{listers.NewNamespaced[*rabbitmqcomv1beta1.Federation](s.ResourceIndexer, namespace)}
 }
 
 // FederationNamespaceLister helps list and get Federations.
@@ -64,36 +56,15 @@ func (s *federationLister) Federations(namespace string) FederationNamespaceList
 type FederationNamespaceLister interface {
 	// List lists all Federations in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Federation, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Federation, err error)
 	// Get retrieves the Federation from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.Federation, error)
+	Get(name string) (*rabbitmqcomv1beta1.Federation, error)
 	FederationNamespaceListerExpansion
 }
 
 // federationNamespaceLister implements the FederationNamespaceLister
 // interface.
 type federationNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Federations in the indexer for a given namespace.
-func (s federationNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.Federation, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Federation))
-	})
-	return ret, err
-}
-
-// Get retrieves the Federation from the indexer for a given namespace and name.
-func (s federationNamespaceLister) Get(name string) (*v1beta1.Federation, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("federation"), name)
-	}
-	return obj.(*v1beta1.Federation), nil
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Federation]
 }

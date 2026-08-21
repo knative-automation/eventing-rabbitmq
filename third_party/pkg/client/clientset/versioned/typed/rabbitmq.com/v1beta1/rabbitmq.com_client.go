@@ -19,11 +19,11 @@ limitations under the License.
 package v1beta1
 
 import (
-	"net/http"
+	http "net/http"
 
 	rest "k8s.io/client-go/rest"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	"knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned/scheme"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	scheme "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned/scheme"
 )
 
 type RabbitmqV1beta1Interface interface {
@@ -31,6 +31,7 @@ type RabbitmqV1beta1Interface interface {
 	BindingsGetter
 	ExchangesGetter
 	FederationsGetter
+	OperatorPoliciesGetter
 	PermissionsGetter
 	PoliciesGetter
 	QueuesGetter
@@ -55,6 +56,10 @@ func (c *RabbitmqV1beta1Client) Exchanges(namespace string) ExchangeInterface {
 
 func (c *RabbitmqV1beta1Client) Federations(namespace string) FederationInterface {
 	return newFederations(c, namespace)
+}
+
+func (c *RabbitmqV1beta1Client) OperatorPolicies(namespace string) OperatorPolicyInterface {
+	return newOperatorPolicies(c, namespace)
 }
 
 func (c *RabbitmqV1beta1Client) Permissions(namespace string) PermissionInterface {
@@ -90,9 +95,7 @@ func (c *RabbitmqV1beta1Client) Vhosts(namespace string) VhostInterface {
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*RabbitmqV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -104,9 +107,7 @@ func NewForConfig(c *rest.Config) (*RabbitmqV1beta1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*RabbitmqV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 	if err != nil {
 		return nil, err
@@ -129,17 +130,15 @@ func New(c rest.Interface) *RabbitmqV1beta1Client {
 	return &RabbitmqV1beta1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1beta1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := rabbitmqcomv1beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

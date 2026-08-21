@@ -64,7 +64,7 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 		t.Fatal(err)
 	}
 
-	if err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+	if err = wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
 		_, err = kubeClient.Get(ctx).CoreV1().Secrets(rabbitmqNamespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -129,7 +129,7 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 }
 
 func TopologyOperatorDeploymentReady(ctx context.Context, t feature.T) {
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
 		deployment, err := kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -146,7 +146,7 @@ func TopologyOperatorDeploymentReady(ctx context.Context, t feature.T) {
 func TopologyOperatorDeploymentUpdated(ctx context.Context, t feature.T) (*appsv1.Deployment, error) {
 	var deployment *appsv1.Deployment
 	var err error
-	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
 		deployment, err = kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {

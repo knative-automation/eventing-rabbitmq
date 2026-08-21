@@ -19,123 +19,32 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	gentype "k8s.io/client-go/gentype"
 	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned/typed/rabbitmq.com/v1beta1"
 )
 
-// FakeFederations implements FederationInterface
-type FakeFederations struct {
+// fakeFederations implements FederationInterface
+type fakeFederations struct {
+	*gentype.FakeClientWithList[*v1beta1.Federation, *v1beta1.FederationList]
 	Fake *FakeRabbitmqV1beta1
-	ns   string
 }
 
-var federationsResource = v1beta1.SchemeGroupVersion.WithResource("federations")
-
-var federationsKind = v1beta1.SchemeGroupVersion.WithKind("Federation")
-
-// Get takes name of the federation, and returns the corresponding federation object, and an error if there is any.
-func (c *FakeFederations) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Federation, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(federationsResource, c.ns, name), &v1beta1.Federation{})
-
-	if obj == nil {
-		return nil, err
+func newFakeFederations(fake *FakeRabbitmqV1beta1, namespace string) rabbitmqcomv1beta1.FederationInterface {
+	return &fakeFederations{
+		gentype.NewFakeClientWithList[*v1beta1.Federation, *v1beta1.FederationList](
+			fake.Fake,
+			namespace,
+			v1beta1.SchemeGroupVersion.WithResource("federations"),
+			v1beta1.SchemeGroupVersion.WithKind("Federation"),
+			func() *v1beta1.Federation { return &v1beta1.Federation{} },
+			func() *v1beta1.FederationList { return &v1beta1.FederationList{} },
+			func(dst, src *v1beta1.FederationList) { dst.ListMeta = src.ListMeta },
+			func(list *v1beta1.FederationList) []*v1beta1.Federation { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1beta1.FederationList, items []*v1beta1.Federation) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1beta1.Federation), err
-}
-
-// List takes label and field selectors, and returns the list of Federations that match those selectors.
-func (c *FakeFederations) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.FederationList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(federationsResource, federationsKind, c.ns, opts), &v1beta1.FederationList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1beta1.FederationList{ListMeta: obj.(*v1beta1.FederationList).ListMeta}
-	for _, item := range obj.(*v1beta1.FederationList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested federations.
-func (c *FakeFederations) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(federationsResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a federation and creates it.  Returns the server's representation of the federation, and an error, if there is any.
-func (c *FakeFederations) Create(ctx context.Context, federation *v1beta1.Federation, opts v1.CreateOptions) (result *v1beta1.Federation, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(federationsResource, c.ns, federation), &v1beta1.Federation{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Federation), err
-}
-
-// Update takes the representation of a federation and updates it. Returns the server's representation of the federation, and an error, if there is any.
-func (c *FakeFederations) Update(ctx context.Context, federation *v1beta1.Federation, opts v1.UpdateOptions) (result *v1beta1.Federation, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(federationsResource, c.ns, federation), &v1beta1.Federation{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Federation), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeFederations) UpdateStatus(ctx context.Context, federation *v1beta1.Federation, opts v1.UpdateOptions) (*v1beta1.Federation, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(federationsResource, "status", c.ns, federation), &v1beta1.Federation{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Federation), err
-}
-
-// Delete takes name of the federation and deletes it. Returns an error if one occurs.
-func (c *FakeFederations) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(federationsResource, c.ns, name, opts), &v1beta1.Federation{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeFederations) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(federationsResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1beta1.FederationList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched federation.
-func (c *FakeFederations) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Federation, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(federationsResource, c.ns, name, pt, data, subresources...), &v1beta1.Federation{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Federation), err
 }

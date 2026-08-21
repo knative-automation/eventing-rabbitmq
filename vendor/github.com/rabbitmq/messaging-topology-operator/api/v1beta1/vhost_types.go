@@ -29,6 +29,15 @@ type VhostSpec struct {
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	// DeletionPolicy defines the behavior of vhost in the RabbitMQ cluster when the corresponding custom resource is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
+	// Limits defines limits to be applied to the vhost.
+	// Supported limits include max-connections and max-queues.
+	// See https://www.rabbitmq.com/docs/vhosts#limits
+	VhostLimits *VhostLimits `json:"limits,omitempty"`
 }
 
 // VhostStatus defines the observed state of Vhost
@@ -41,7 +50,7 @@ type VhostStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Vhost is the Schema for the vhosts API
@@ -60,6 +69,12 @@ type VhostList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Vhost `json:"items"`
+}
+
+// VhostLimits defines limits to be applied to the vhost.
+type VhostLimits struct {
+	Connections *int32 `json:"connections,omitempty"`
+	Queues      *int32 `json:"queues,omitempty"`
 }
 
 func (v *Vhost) GroupResource() schema.GroupResource {

@@ -117,7 +117,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 		"rejected": {
 			client: MockClient{
 				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
-					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(500, ""), 0, time.Now(), []protocol.Result{amqp.Error{}})
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(500, ""), 0, time.Now(), []protocol.Result{&amqp.Error{}})
 				},
 			},
 			reqBody: `{"key":"value"}`,
@@ -128,7 +128,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			retry: 5,
 			client: MockClient{
 				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
-					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 3, time.Now(), []protocol.Result{amqp.Error{}, amqp.Error{}, amqp.Error{}})
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 3, time.Now(), []protocol.Result{&amqp.Error{}, &amqp.Error{}, &amqp.Error{}})
 				},
 			},
 			reqBody: `{"key":"value"}`,

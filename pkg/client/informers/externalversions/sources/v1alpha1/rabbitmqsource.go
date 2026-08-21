@@ -19,24 +19,24 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	apissourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	versioned "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/listers/sources/v1alpha1"
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/listers/sources/v1alpha1"
 )
 
 // RabbitmqSourceInformer provides access to a shared informer and lister for
 // RabbitmqSources.
 type RabbitmqSourceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.RabbitmqSourceLister
+	Lister() sourcesv1alpha1.RabbitmqSourceLister
 }
 
 type rabbitmqSourceInformer struct {
@@ -57,21 +57,33 @@ func NewRabbitmqSourceInformer(client versioned.Interface, namespace string, res
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredRabbitmqSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SourcesV1alpha1().RabbitmqSources(namespace).List(context.TODO(), options)
+				return client.SourcesV1alpha1().RabbitmqSources(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SourcesV1alpha1().RabbitmqSources(namespace).Watch(context.TODO(), options)
+				return client.SourcesV1alpha1().RabbitmqSources(namespace).Watch(context.Background(), options)
 			},
-		},
-		&sourcesv1alpha1.RabbitmqSource{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SourcesV1alpha1().RabbitmqSources(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SourcesV1alpha1().RabbitmqSources(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apissourcesv1alpha1.RabbitmqSource{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *rabbitmqSourceInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *rabbitmqSourceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&sourcesv1alpha1.RabbitmqSource{}, f.defaultInformer)
+	return f.factory.InformerFor(&apissourcesv1alpha1.RabbitmqSource{}, f.defaultInformer)
 }
 
-func (f *rabbitmqSourceInformer) Lister() v1alpha1.RabbitmqSourceLister {
-	return v1alpha1.NewRabbitmqSourceLister(f.Informer().GetIndexer())
+func (f *rabbitmqSourceInformer) Lister() sourcesv1alpha1.RabbitmqSourceLister {
+	return sourcesv1alpha1.NewRabbitmqSourceLister(f.Informer().GetIndexer())
 }

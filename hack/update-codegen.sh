@@ -19,9 +19,12 @@ set -o nounset
 set -o pipefail
 
 source $(dirname $0)/../vendor/knative.dev/hack/codegen-library.sh
+source "${CODEGEN_PKG}/kube_codegen.sh"
 
-# If we run with -mod=vendor here, then generate-groups.sh looks for vendor files in the wrong place.
+# If we run with -mod=vendor here, then the generators look for vendor files in the wrong place.
 export GOFLAGS=-mod=
+
+boilerplate="${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt"
 
 echo "=== Update Codegen for $MODULE_NAME"
 
@@ -29,33 +32,38 @@ echo "=== Update Codegen for $MODULE_NAME"
 # Kubebuilder project layout has API under 'api/v1beta1', ie. 'github.com/rabbitmq/messaging-topology-operator/api/v1beta1'
 # client-go codegen expects group name (rabbitmq.com) in the path, ie. 'github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1beta1'
 # Because there's no way how to modify any of these settings, to enable client codegen,
-# we need to reorganize things a little bit (copy to 'third_party/api/rabbitmq.com/v1beta1')
+# we need to reorganize things a little bit (copy to 'third_party/pkg/apis/rabbitmq.com/v1beta1')
 rm -rf ${REPO_ROOT_DIR}/third_party/pkg/apis/rabbitmq.com
 mkdir -p ${REPO_ROOT_DIR}/third_party/pkg/apis/rabbitmq.com
 cp -R "${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1beta1" ${REPO_ROOT_DIR}/third_party/pkg/apis/rabbitmq.com
 
 group "Kubernetes Codegen"
 
-# generate the code with:
-# --output-base    because this script should also be able to run inside the vendor dir of
-#                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
-#                  instead of the $GOPATH directly. For normal projects this can be dropped.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
-  knative.dev/eventing-rabbitmq/pkg/client knative.dev/eventing-rabbitmq/pkg/apis \
-  "sources:v1alpha1 eventing:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+# Deepcopy for our own API types (sources, eventing and the duck types).
+kube::codegen::gen_helpers \
+  --boilerplate "${boilerplate}" \
+  "${REPO_ROOT_DIR}/pkg/apis"
 
-# Only deepcopy the Duck types, as they are not real resources.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
-  knative.dev/eventing-rabbitmq/pkg/client knative.dev/eventing-rabbitmq/pkg/apis \
-  "duck:v1beta1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+# Client, lister and informer for our own API types.
+kube::codegen::gen_client \
+  --boilerplate "${boilerplate}" \
+  --output-dir "${REPO_ROOT_DIR}/pkg/client" \
+  --output-pkg "knative.dev/eventing-rabbitmq/pkg/client" \
+  --with-watch \
+  "${REPO_ROOT_DIR}/pkg/apis"
 
-# Generate our own client (otherwise injection won't work)
-${CODEGEN_PKG}/generate-groups.sh "client,informer,lister" \
-  knative.dev/eventing-rabbitmq/third_party/pkg/client knative.dev/eventing-rabbitmq/third_party/pkg/apis \
-  "rabbitmq.com:v1beta1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+group "RabbitMQ Codegen"
+
+# Generate our own RabbitMQ client (otherwise injection won't work).
+# The deepcopy functions for the RabbitMQ types are copied from the upstream
+# messaging-topology-operator vendor directory above, so only the client is
+# generated here.
+kube::codegen::gen_client \
+  --boilerplate "${boilerplate}" \
+  --output-dir "${REPO_ROOT_DIR}/third_party/pkg/client" \
+  --output-pkg "knative.dev/eventing-rabbitmq/third_party/pkg/client" \
+  --with-watch \
+  "${REPO_ROOT_DIR}/third_party/pkg/apis"
 
 group "Knative Codegen"
 
@@ -63,14 +71,13 @@ group "Knative Codegen"
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   knative.dev/eventing-rabbitmq/pkg/client knative.dev/eventing-rabbitmq/pkg/apis \
   "sources:v1alpha1 duck:v1beta1 eventing:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+  --go-header-file "${boilerplate}"
 
-group "RabbitMQ Codegen"
-
+# Knative Injection for the RabbitMQ client
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   knative.dev/eventing-rabbitmq/third_party/pkg/client knative.dev/eventing-rabbitmq/third_party/pkg/apis \
   "rabbitmq.com:v1beta1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+  --go-header-file "${boilerplate}"
 
 group "Update deps post-codegen"
 

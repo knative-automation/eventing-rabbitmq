@@ -19,24 +19,24 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	apisrabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	versioned "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/third_party/pkg/client/informers/externalversions/internalinterfaces"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 )
 
 // ShovelInformer provides access to a shared informer and lister for
 // Shovels.
 type ShovelInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.ShovelLister
+	Lister() rabbitmqcomv1beta1.ShovelLister
 }
 
 type shovelInformer struct {
@@ -57,21 +57,33 @@ func NewShovelInformer(client versioned.Interface, namespace string, resyncPerio
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredShovelInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Shovels(namespace).List(context.TODO(), options)
+				return client.RabbitmqV1beta1().Shovels(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Shovels(namespace).Watch(context.TODO(), options)
+				return client.RabbitmqV1beta1().Shovels(namespace).Watch(context.Background(), options)
 			},
-		},
-		&rabbitmqcomv1beta1.Shovel{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Shovels(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Shovels(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apisrabbitmqcomv1beta1.Shovel{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *shovelInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *shovelInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&rabbitmqcomv1beta1.Shovel{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisrabbitmqcomv1beta1.Shovel{}, f.defaultInformer)
 }
 
-func (f *shovelInformer) Lister() v1beta1.ShovelLister {
-	return v1beta1.NewShovelLister(f.Informer().GetIndexer())
+func (f *shovelInformer) Lister() rabbitmqcomv1beta1.ShovelLister {
+	return rabbitmqcomv1beta1.NewShovelLister(f.Informer().GetIndexer())
 }

@@ -153,7 +153,7 @@ func (r *RabbitMQConnectionHandler) createConnectionAndChannel(
 
 		r.reconnTries += 1
 		if r.reconnTries > r.reconnectionTriesThreshold {
-			err = errors.New("could not communicate to rabbitmq, restarting pods...")
+			err = errors.New("could not communicate to rabbitmq, restarting pods")
 			return
 		}
 	}

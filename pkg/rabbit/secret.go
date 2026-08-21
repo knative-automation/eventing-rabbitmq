@@ -60,9 +60,10 @@ func SecretName(resourceName, typeString string) string {
 // secret of the given Broker.
 func SecretLabels(resourceName, typeString string) map[string]string {
 	var label string
-	if typeString == "broker" {
+	switch typeString {
+	case "broker":
 		label = eventing.BrokerLabelKey
-	} else if typeString == "source" {
+	case "source":
 		label = SourceLabelKey
 	}
 	return map[string]string{

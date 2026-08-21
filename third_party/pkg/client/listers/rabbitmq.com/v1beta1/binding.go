@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 // BindingLister helps list Bindings.
@@ -30,7 +30,7 @@ import (
 type BindingLister interface {
 	// List lists all Bindings in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Binding, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Binding, err error)
 	// Bindings returns an object that can list and get Bindings.
 	Bindings(namespace string) BindingNamespaceLister
 	BindingListerExpansion
@@ -38,25 +38,17 @@ type BindingLister interface {
 
 // bindingLister implements the BindingLister interface.
 type bindingLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Binding]
 }
 
 // NewBindingLister returns a new BindingLister.
 func NewBindingLister(indexer cache.Indexer) BindingLister {
-	return &bindingLister{indexer: indexer}
-}
-
-// List lists all Bindings in the indexer.
-func (s *bindingLister) List(selector labels.Selector) (ret []*v1beta1.Binding, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Binding))
-	})
-	return ret, err
+	return &bindingLister{listers.New[*rabbitmqcomv1beta1.Binding](indexer, rabbitmqcomv1beta1.Resource("binding"))}
 }
 
 // Bindings returns an object that can list and get Bindings.
 func (s *bindingLister) Bindings(namespace string) BindingNamespaceLister {
-	return bindingNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return bindingNamespaceLister{listers.NewNamespaced[*rabbitmqcomv1beta1.Binding](s.ResourceIndexer, namespace)}
 }
 
 // BindingNamespaceLister helps list and get Bindings.
@@ -64,36 +56,15 @@ func (s *bindingLister) Bindings(namespace string) BindingNamespaceLister {
 type BindingNamespaceLister interface {
 	// List lists all Bindings in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Binding, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Binding, err error)
 	// Get retrieves the Binding from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.Binding, error)
+	Get(name string) (*rabbitmqcomv1beta1.Binding, error)
 	BindingNamespaceListerExpansion
 }
 
 // bindingNamespaceLister implements the BindingNamespaceLister
 // interface.
 type bindingNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Bindings in the indexer for a given namespace.
-func (s bindingNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.Binding, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Binding))
-	})
-	return ret, err
-}
-
-// Get retrieves the Binding from the indexer for a given namespace and name.
-func (s bindingNamespaceLister) Get(name string) (*v1beta1.Binding, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("binding"), name)
-	}
-	return obj.(*v1beta1.Binding), nil
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Binding]
 }

@@ -24,6 +24,8 @@ type ExchangeExpansion interface{}
 
 type FederationExpansion interface{}
 
+type OperatorPolicyExpansion interface{}
+
 type PermissionExpansion interface{}
 
 type PolicyExpansion interface{}

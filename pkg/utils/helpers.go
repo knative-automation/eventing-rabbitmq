@@ -23,9 +23,10 @@ import (
 )
 
 func SetBackoffPolicy(ctx context.Context, backoffPolicy string) eventingduckv1.BackoffPolicyType {
-	if backoffPolicy == "" || backoffPolicy == "exponential" {
+	switch backoffPolicy {
+	case "", "exponential":
 		return eventingduckv1.BackoffPolicyExponential
-	} else if backoffPolicy == "linear" {
+	case "linear":
 		return eventingduckv1.BackoffPolicyLinear
 	}
 	return ""

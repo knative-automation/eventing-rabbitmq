@@ -161,7 +161,7 @@ func NewController(
 				if err != nil {
 					log.Print("Failed to lookup Broker for Trigger", zap.Error(err))
 				} else {
-					label := broker.ObjectMeta.Annotations[brokerreconciler.ClassAnnotationKey]
+					label := broker.Annotations[brokerreconciler.ClassAnnotationKey]
 					if label == BrokerClass {
 						impl.Enqueue(obj)
 					}

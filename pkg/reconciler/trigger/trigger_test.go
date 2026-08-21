@@ -167,7 +167,7 @@ func TestReconcile(t *testing.T) {
 		"rabbitmqClusterConfig": configWithRabbitMQCluster(),
 		"rabbitmqBrokerConfig":  configWithRabbitMQBrokerConfig(),
 	}
-	table := TableTest{
+	table := TableTest{ //nolint:prealloc // literal base cases are extended per broker config below; preallocation isn't practical
 		{
 			Name: "bad workqueue key",
 			// Make sure Reconcile handles bad keys.
@@ -774,7 +774,7 @@ func TestReconcile(t *testing.T) {
 						WithInitTriggerConditions,
 						WithDependencyAnnotation(dependencyAnnotation),
 						WithTriggerBrokerReady(),
-						WithTriggerDependencyUnknown("GenerationNotEqual", fmt.Sprintf("The dependency's metadata.generation, %q, is not equal to its status.observedGeneration, %q.", currentGeneration, outdatedGeneration))),
+						WithTriggerDependencyUnknown("GenerationNotEqual", fmt.Sprintf("The dependency's metadata.generation, %d, is not equal to its status.observedGeneration, %d.", currentGeneration, outdatedGeneration))),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Malformed dependency annotation", name),

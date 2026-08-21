@@ -67,7 +67,7 @@ func Install(ctx context.Context, t feature.T) {
 	}
 
 	for _, secretName := range []string{rabbitmq.TLS_SECRET_NAME, rabbitmq.CA_SECRET_NAME} {
-		if err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		if err = wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {

@@ -19,9 +19,9 @@ type PolicySpec struct {
 	// Required property.
 	// +kubebuilder:validation:Required
 	Pattern string `json:"pattern"`
-	// What this policy applies to: 'queues', 'exchanges', or 'all'.
+	// What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'.
 	// Default to 'all'.
-	// +kubebuilder:validation:Enum=queues;exchanges;all
+	// +kubebuilder:validation:Enum=queues;classic_queues;quorum_queues;streams;exchanges;all
 	// +kubebuilder:default:=all
 	ApplyTo string `json:"applyTo,omitempty"`
 	// Default to '0'.
@@ -33,7 +33,7 @@ type PolicySpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Required
 	Definition *runtime.RawExtension `json:"definition"`
-	// Reference to the RabbitmqCluster that the exchange will be created in.
+	// Reference to the RabbitmqCluster that the policy will be created in.
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
@@ -49,7 +49,7 @@ type PolicyStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Policy is the Schema for the policies API

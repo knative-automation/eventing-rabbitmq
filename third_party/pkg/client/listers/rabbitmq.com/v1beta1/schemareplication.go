@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 // SchemaReplicationLister helps list SchemaReplications.
@@ -30,7 +30,7 @@ import (
 type SchemaReplicationLister interface {
 	// List lists all SchemaReplications in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.SchemaReplication, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.SchemaReplication, err error)
 	// SchemaReplications returns an object that can list and get SchemaReplications.
 	SchemaReplications(namespace string) SchemaReplicationNamespaceLister
 	SchemaReplicationListerExpansion
@@ -38,25 +38,17 @@ type SchemaReplicationLister interface {
 
 // schemaReplicationLister implements the SchemaReplicationLister interface.
 type schemaReplicationLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.SchemaReplication]
 }
 
 // NewSchemaReplicationLister returns a new SchemaReplicationLister.
 func NewSchemaReplicationLister(indexer cache.Indexer) SchemaReplicationLister {
-	return &schemaReplicationLister{indexer: indexer}
-}
-
-// List lists all SchemaReplications in the indexer.
-func (s *schemaReplicationLister) List(selector labels.Selector) (ret []*v1beta1.SchemaReplication, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.SchemaReplication))
-	})
-	return ret, err
+	return &schemaReplicationLister{listers.New[*rabbitmqcomv1beta1.SchemaReplication](indexer, rabbitmqcomv1beta1.Resource("schemareplication"))}
 }
 
 // SchemaReplications returns an object that can list and get SchemaReplications.
 func (s *schemaReplicationLister) SchemaReplications(namespace string) SchemaReplicationNamespaceLister {
-	return schemaReplicationNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return schemaReplicationNamespaceLister{listers.NewNamespaced[*rabbitmqcomv1beta1.SchemaReplication](s.ResourceIndexer, namespace)}
 }
 
 // SchemaReplicationNamespaceLister helps list and get SchemaReplications.
@@ -64,36 +56,15 @@ func (s *schemaReplicationLister) SchemaReplications(namespace string) SchemaRep
 type SchemaReplicationNamespaceLister interface {
 	// List lists all SchemaReplications in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.SchemaReplication, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.SchemaReplication, err error)
 	// Get retrieves the SchemaReplication from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.SchemaReplication, error)
+	Get(name string) (*rabbitmqcomv1beta1.SchemaReplication, error)
 	SchemaReplicationNamespaceListerExpansion
 }
 
 // schemaReplicationNamespaceLister implements the SchemaReplicationNamespaceLister
 // interface.
 type schemaReplicationNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all SchemaReplications in the indexer for a given namespace.
-func (s schemaReplicationNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.SchemaReplication, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.SchemaReplication))
-	})
-	return ret, err
-}
-
-// Get retrieves the SchemaReplication from the indexer for a given namespace and name.
-func (s schemaReplicationNamespaceLister) Get(name string) (*v1beta1.SchemaReplication, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("schemareplication"), name)
-	}
-	return obj.(*v1beta1.SchemaReplication), nil
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.SchemaReplication]
 }

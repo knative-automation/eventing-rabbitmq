@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 )
 
 // RabbitmqSourceLister helps list RabbitmqSources.
@@ -30,7 +30,7 @@ import (
 type RabbitmqSourceLister interface {
 	// List lists all RabbitmqSources in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.RabbitmqSource, err error)
+	List(selector labels.Selector) (ret []*sourcesv1alpha1.RabbitmqSource, err error)
 	// RabbitmqSources returns an object that can list and get RabbitmqSources.
 	RabbitmqSources(namespace string) RabbitmqSourceNamespaceLister
 	RabbitmqSourceListerExpansion
@@ -38,25 +38,17 @@ type RabbitmqSourceLister interface {
 
 // rabbitmqSourceLister implements the RabbitmqSourceLister interface.
 type rabbitmqSourceLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*sourcesv1alpha1.RabbitmqSource]
 }
 
 // NewRabbitmqSourceLister returns a new RabbitmqSourceLister.
 func NewRabbitmqSourceLister(indexer cache.Indexer) RabbitmqSourceLister {
-	return &rabbitmqSourceLister{indexer: indexer}
-}
-
-// List lists all RabbitmqSources in the indexer.
-func (s *rabbitmqSourceLister) List(selector labels.Selector) (ret []*v1alpha1.RabbitmqSource, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.RabbitmqSource))
-	})
-	return ret, err
+	return &rabbitmqSourceLister{listers.New[*sourcesv1alpha1.RabbitmqSource](indexer, sourcesv1alpha1.Resource("rabbitmqsource"))}
 }
 
 // RabbitmqSources returns an object that can list and get RabbitmqSources.
 func (s *rabbitmqSourceLister) RabbitmqSources(namespace string) RabbitmqSourceNamespaceLister {
-	return rabbitmqSourceNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return rabbitmqSourceNamespaceLister{listers.NewNamespaced[*sourcesv1alpha1.RabbitmqSource](s.ResourceIndexer, namespace)}
 }
 
 // RabbitmqSourceNamespaceLister helps list and get RabbitmqSources.
@@ -64,36 +56,15 @@ func (s *rabbitmqSourceLister) RabbitmqSources(namespace string) RabbitmqSourceN
 type RabbitmqSourceNamespaceLister interface {
 	// List lists all RabbitmqSources in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.RabbitmqSource, err error)
+	List(selector labels.Selector) (ret []*sourcesv1alpha1.RabbitmqSource, err error)
 	// Get retrieves the RabbitmqSource from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.RabbitmqSource, error)
+	Get(name string) (*sourcesv1alpha1.RabbitmqSource, error)
 	RabbitmqSourceNamespaceListerExpansion
 }
 
 // rabbitmqSourceNamespaceLister implements the RabbitmqSourceNamespaceLister
 // interface.
 type rabbitmqSourceNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all RabbitmqSources in the indexer for a given namespace.
-func (s rabbitmqSourceNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.RabbitmqSource, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.RabbitmqSource))
-	})
-	return ret, err
-}
-
-// Get retrieves the RabbitmqSource from the indexer for a given namespace and name.
-func (s rabbitmqSourceNamespaceLister) Get(name string) (*v1alpha1.RabbitmqSource, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("rabbitmqsource"), name)
-	}
-	return obj.(*v1alpha1.RabbitmqSource), nil
+	listers.ResourceIndexer[*sourcesv1alpha1.RabbitmqSource]
 }

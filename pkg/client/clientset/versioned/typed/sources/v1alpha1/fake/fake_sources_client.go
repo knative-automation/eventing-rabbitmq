@@ -29,7 +29,7 @@ type FakeSourcesV1alpha1 struct {
 }
 
 func (c *FakeSourcesV1alpha1) RabbitmqSources(namespace string) v1alpha1.RabbitmqSourceInterface {
-	return &FakeRabbitmqSources{c, namespace}
+	return newFakeRabbitmqSources(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

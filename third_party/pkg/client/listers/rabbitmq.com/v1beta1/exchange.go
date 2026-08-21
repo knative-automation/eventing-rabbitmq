@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 // ExchangeLister helps list Exchanges.
@@ -30,7 +30,7 @@ import (
 type ExchangeLister interface {
 	// List lists all Exchanges in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Exchange, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Exchange, err error)
 	// Exchanges returns an object that can list and get Exchanges.
 	Exchanges(namespace string) ExchangeNamespaceLister
 	ExchangeListerExpansion
@@ -38,25 +38,17 @@ type ExchangeLister interface {
 
 // exchangeLister implements the ExchangeLister interface.
 type exchangeLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Exchange]
 }
 
 // NewExchangeLister returns a new ExchangeLister.
 func NewExchangeLister(indexer cache.Indexer) ExchangeLister {
-	return &exchangeLister{indexer: indexer}
-}
-
-// List lists all Exchanges in the indexer.
-func (s *exchangeLister) List(selector labels.Selector) (ret []*v1beta1.Exchange, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Exchange))
-	})
-	return ret, err
+	return &exchangeLister{listers.New[*rabbitmqcomv1beta1.Exchange](indexer, rabbitmqcomv1beta1.Resource("exchange"))}
 }
 
 // Exchanges returns an object that can list and get Exchanges.
 func (s *exchangeLister) Exchanges(namespace string) ExchangeNamespaceLister {
-	return exchangeNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return exchangeNamespaceLister{listers.NewNamespaced[*rabbitmqcomv1beta1.Exchange](s.ResourceIndexer, namespace)}
 }
 
 // ExchangeNamespaceLister helps list and get Exchanges.
@@ -64,36 +56,15 @@ func (s *exchangeLister) Exchanges(namespace string) ExchangeNamespaceLister {
 type ExchangeNamespaceLister interface {
 	// List lists all Exchanges in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Exchange, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Exchange, err error)
 	// Get retrieves the Exchange from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.Exchange, error)
+	Get(name string) (*rabbitmqcomv1beta1.Exchange, error)
 	ExchangeNamespaceListerExpansion
 }
 
 // exchangeNamespaceLister implements the ExchangeNamespaceLister
 // interface.
 type exchangeNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Exchanges in the indexer for a given namespace.
-func (s exchangeNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.Exchange, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Exchange))
-	})
-	return ret, err
-}
-
-// Get retrieves the Exchange from the indexer for a given namespace and name.
-func (s exchangeNamespaceLister) Get(name string) (*v1beta1.Exchange, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("exchange"), name)
-	}
-	return obj.(*v1beta1.Exchange), nil
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Exchange]
 }

@@ -49,7 +49,7 @@ type SuperStreamStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // SuperStream is the Schema for the queues API
@@ -70,10 +70,10 @@ type SuperStreamList struct {
 	Items           []SuperStream `json:"items"`
 }
 
-func (q *SuperStream) GroupResource() schema.GroupResource {
+func (s *SuperStream) GroupResource() schema.GroupResource {
 	return schema.GroupResource{
-		Group:    q.GroupVersionKind().Group,
-		Resource: q.GroupVersionKind().Kind,
+		Group:    s.GroupVersionKind().Group,
+		Resource: s.GroupVersionKind().Kind,
 	}
 }
 

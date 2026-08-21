@@ -48,7 +48,6 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
-	pkgLogging "knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
@@ -89,7 +88,7 @@ type Reconciler struct {
 
 	rabbitmqClientSet   versioned.Interface
 	loggingContext      context.Context
-	loggingConfig       *pkgLogging.Config
+	loggingConfig       *logging.Config
 	observabilityConfig *observability.Config
 
 	sinkResolver *resolver.URIResolver

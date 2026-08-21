@@ -172,7 +172,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				})
 		}
 	}
-	if parallelism, ok := args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation]; ok {
+	if parallelism, ok := args.Trigger.Annotations[ParallelismAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,
 			corev1.EnvVar{
 				Name:  "PARALLELISM",

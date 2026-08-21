@@ -89,7 +89,7 @@ func WithBrokerDelivery(d *eventingduckv1.DeliverySpec) BrokerOption {
 
 func WithBrokerDeletionTimestamp(b *v1.Broker) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
-	b.ObjectMeta.SetDeletionTimestamp(&t)
+	b.SetDeletionTimestamp(&t)
 }
 
 // WithBrokerConfig sets the Broker's config KReference.

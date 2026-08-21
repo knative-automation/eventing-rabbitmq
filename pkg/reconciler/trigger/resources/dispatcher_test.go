@@ -280,7 +280,7 @@ func withEnv(env corev1.EnvVar) func(*appsv1.Deployment) {
 
 func deploymentNamed(name string) func(*appsv1.Deployment) {
 	return func(d *appsv1.Deployment) {
-		d.ObjectMeta.Name = name
+		d.Name = name
 	}
 }
 
@@ -329,10 +329,10 @@ func withDLXName(name string) func(*DispatcherArgs) {
 
 func withParallelism(c string) func(*DispatcherArgs) {
 	return func(args *DispatcherArgs) {
-		if args.Trigger.ObjectMeta.Annotations == nil {
-			args.Trigger.ObjectMeta.Annotations = map[string]string{ParallelismAnnotation: c}
+		if args.Trigger.Annotations == nil {
+			args.Trigger.Annotations = map[string]string{ParallelismAnnotation: c}
 		} else {
-			args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation] = c
+			args.Trigger.Annotations[ParallelismAnnotation] = c
 		}
 	}
 }

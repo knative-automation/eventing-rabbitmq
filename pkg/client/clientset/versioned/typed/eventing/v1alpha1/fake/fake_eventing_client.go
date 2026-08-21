@@ -29,7 +29,7 @@ type FakeEventingV1alpha1 struct {
 }
 
 func (c *FakeEventingV1alpha1) RabbitmqBrokerConfigs(namespace string) v1alpha1.RabbitmqBrokerConfigInterface {
-	return &FakeRabbitmqBrokerConfigs{c, namespace}
+	return newFakeRabbitmqBrokerConfigs(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

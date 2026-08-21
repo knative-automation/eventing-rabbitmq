@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	eventingv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
@@ -259,7 +259,7 @@ func TestNewPolicy(t *testing.T) {
 				},
 				Owner:     owner,
 				Labels:    map[string]string{"cool": "label"},
-				DLXName:   pointer.String("an-exchange"),
+				DLXName:   ptr.To("an-exchange"),
 				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
@@ -292,7 +292,7 @@ func TestNewPolicy(t *testing.T) {
 				},
 				Owner:     owner,
 				Labels:    map[string]string{"cool": "label"},
-				DLXName:   pointer.String("an-exchange"),
+				DLXName:   ptr.To("an-exchange"),
 				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
@@ -356,7 +356,7 @@ func TestNewBrokerDLXPolicy(t *testing.T) {
 				},
 				Owner:     owner,
 				Labels:    map[string]string{"cool": "label"},
-				DLXName:   pointer.String("an-exchange"),
+				DLXName:   ptr.To("an-exchange"),
 				BrokerUID: "a-broker-uuid-owfnwdoij",
 			},
 			want: &rabbitv1beta1.Policy{

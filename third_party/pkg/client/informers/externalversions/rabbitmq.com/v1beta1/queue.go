@@ -19,24 +19,24 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	apisrabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	versioned "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/third_party/pkg/client/informers/externalversions/internalinterfaces"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 )
 
 // QueueInformer provides access to a shared informer and lister for
 // Queues.
 type QueueInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.QueueLister
+	Lister() rabbitmqcomv1beta1.QueueLister
 }
 
 type queueInformer struct {
@@ -57,21 +57,33 @@ func NewQueueInformer(client versioned.Interface, namespace string, resyncPeriod
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredQueueInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Queues(namespace).List(context.TODO(), options)
+				return client.RabbitmqV1beta1().Queues(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Queues(namespace).Watch(context.TODO(), options)
+				return client.RabbitmqV1beta1().Queues(namespace).Watch(context.Background(), options)
 			},
-		},
-		&rabbitmqcomv1beta1.Queue{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Queues(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Queues(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apisrabbitmqcomv1beta1.Queue{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *queueInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *queueInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&rabbitmqcomv1beta1.Queue{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisrabbitmqcomv1beta1.Queue{}, f.defaultInformer)
 }
 
-func (f *queueInformer) Lister() v1beta1.QueueLister {
-	return v1beta1.NewQueueLister(f.Informer().GetIndexer())
+func (f *queueInformer) Lister() rabbitmqcomv1beta1.QueueLister {
+	return rabbitmqcomv1beta1.NewQueueLister(f.Informer().GetIndexer())
 }

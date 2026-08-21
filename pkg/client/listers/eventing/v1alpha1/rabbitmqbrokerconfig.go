@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	eventingv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 )
 
 // RabbitmqBrokerConfigLister helps list RabbitmqBrokerConfigs.
@@ -30,7 +30,7 @@ import (
 type RabbitmqBrokerConfigLister interface {
 	// List lists all RabbitmqBrokerConfigs in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.RabbitmqBrokerConfig, err error)
+	List(selector labels.Selector) (ret []*eventingv1alpha1.RabbitmqBrokerConfig, err error)
 	// RabbitmqBrokerConfigs returns an object that can list and get RabbitmqBrokerConfigs.
 	RabbitmqBrokerConfigs(namespace string) RabbitmqBrokerConfigNamespaceLister
 	RabbitmqBrokerConfigListerExpansion
@@ -38,25 +38,17 @@ type RabbitmqBrokerConfigLister interface {
 
 // rabbitmqBrokerConfigLister implements the RabbitmqBrokerConfigLister interface.
 type rabbitmqBrokerConfigLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*eventingv1alpha1.RabbitmqBrokerConfig]
 }
 
 // NewRabbitmqBrokerConfigLister returns a new RabbitmqBrokerConfigLister.
 func NewRabbitmqBrokerConfigLister(indexer cache.Indexer) RabbitmqBrokerConfigLister {
-	return &rabbitmqBrokerConfigLister{indexer: indexer}
-}
-
-// List lists all RabbitmqBrokerConfigs in the indexer.
-func (s *rabbitmqBrokerConfigLister) List(selector labels.Selector) (ret []*v1alpha1.RabbitmqBrokerConfig, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.RabbitmqBrokerConfig))
-	})
-	return ret, err
+	return &rabbitmqBrokerConfigLister{listers.New[*eventingv1alpha1.RabbitmqBrokerConfig](indexer, eventingv1alpha1.Resource("rabbitmqbrokerconfig"))}
 }
 
 // RabbitmqBrokerConfigs returns an object that can list and get RabbitmqBrokerConfigs.
 func (s *rabbitmqBrokerConfigLister) RabbitmqBrokerConfigs(namespace string) RabbitmqBrokerConfigNamespaceLister {
-	return rabbitmqBrokerConfigNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return rabbitmqBrokerConfigNamespaceLister{listers.NewNamespaced[*eventingv1alpha1.RabbitmqBrokerConfig](s.ResourceIndexer, namespace)}
 }
 
 // RabbitmqBrokerConfigNamespaceLister helps list and get RabbitmqBrokerConfigs.
@@ -64,36 +56,15 @@ func (s *rabbitmqBrokerConfigLister) RabbitmqBrokerConfigs(namespace string) Rab
 type RabbitmqBrokerConfigNamespaceLister interface {
 	// List lists all RabbitmqBrokerConfigs in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.RabbitmqBrokerConfig, err error)
+	List(selector labels.Selector) (ret []*eventingv1alpha1.RabbitmqBrokerConfig, err error)
 	// Get retrieves the RabbitmqBrokerConfig from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.RabbitmqBrokerConfig, error)
+	Get(name string) (*eventingv1alpha1.RabbitmqBrokerConfig, error)
 	RabbitmqBrokerConfigNamespaceListerExpansion
 }
 
 // rabbitmqBrokerConfigNamespaceLister implements the RabbitmqBrokerConfigNamespaceLister
 // interface.
 type rabbitmqBrokerConfigNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all RabbitmqBrokerConfigs in the indexer for a given namespace.
-func (s rabbitmqBrokerConfigNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.RabbitmqBrokerConfig, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.RabbitmqBrokerConfig))
-	})
-	return ret, err
-}
-
-// Get retrieves the RabbitmqBrokerConfig from the indexer for a given namespace and name.
-func (s rabbitmqBrokerConfigNamespaceLister) Get(name string) (*v1alpha1.RabbitmqBrokerConfig, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("rabbitmqbrokerconfig"), name)
-	}
-	return obj.(*v1alpha1.RabbitmqBrokerConfig), nil
+	listers.ResourceIndexer[*eventingv1alpha1.RabbitmqBrokerConfig]
 }

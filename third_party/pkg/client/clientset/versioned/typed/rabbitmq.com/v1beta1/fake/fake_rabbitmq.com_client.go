@@ -29,43 +29,47 @@ type FakeRabbitmqV1beta1 struct {
 }
 
 func (c *FakeRabbitmqV1beta1) Bindings(namespace string) v1beta1.BindingInterface {
-	return &FakeBindings{c, namespace}
+	return newFakeBindings(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Exchanges(namespace string) v1beta1.ExchangeInterface {
-	return &FakeExchanges{c, namespace}
+	return newFakeExchanges(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Federations(namespace string) v1beta1.FederationInterface {
-	return &FakeFederations{c, namespace}
+	return newFakeFederations(c, namespace)
+}
+
+func (c *FakeRabbitmqV1beta1) OperatorPolicies(namespace string) v1beta1.OperatorPolicyInterface {
+	return newFakeOperatorPolicies(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Permissions(namespace string) v1beta1.PermissionInterface {
-	return &FakePermissions{c, namespace}
+	return newFakePermissions(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Policies(namespace string) v1beta1.PolicyInterface {
-	return &FakePolicies{c, namespace}
+	return newFakePolicies(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Queues(namespace string) v1beta1.QueueInterface {
-	return &FakeQueues{c, namespace}
+	return newFakeQueues(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) SchemaReplications(namespace string) v1beta1.SchemaReplicationInterface {
-	return &FakeSchemaReplications{c, namespace}
+	return newFakeSchemaReplications(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Shovels(namespace string) v1beta1.ShovelInterface {
-	return &FakeShovels{c, namespace}
+	return newFakeShovels(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Users(namespace string) v1beta1.UserInterface {
-	return &FakeUsers{c, namespace}
+	return newFakeUsers(c, namespace)
 }
 
 func (c *FakeRabbitmqV1beta1) Vhosts(namespace string) v1beta1.VhostInterface {
-	return &FakeVhosts{c, namespace}
+	return newFakeVhosts(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

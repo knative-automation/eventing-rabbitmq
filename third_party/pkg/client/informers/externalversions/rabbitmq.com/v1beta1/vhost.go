@@ -19,24 +19,24 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	apisrabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	versioned "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/third_party/pkg/client/informers/externalversions/internalinterfaces"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 )
 
 // VhostInformer provides access to a shared informer and lister for
 // Vhosts.
 type VhostInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.VhostLister
+	Lister() rabbitmqcomv1beta1.VhostLister
 }
 
 type vhostInformer struct {
@@ -57,21 +57,33 @@ func NewVhostInformer(client versioned.Interface, namespace string, resyncPeriod
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredVhostInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Vhosts(namespace).List(context.TODO(), options)
+				return client.RabbitmqV1beta1().Vhosts(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Vhosts(namespace).Watch(context.TODO(), options)
+				return client.RabbitmqV1beta1().Vhosts(namespace).Watch(context.Background(), options)
 			},
-		},
-		&rabbitmqcomv1beta1.Vhost{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Vhosts(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Vhosts(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apisrabbitmqcomv1beta1.Vhost{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *vhostInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *vhostInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&rabbitmqcomv1beta1.Vhost{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisrabbitmqcomv1beta1.Vhost{}, f.defaultInformer)
 }
 
-func (f *vhostInformer) Lister() v1beta1.VhostLister {
-	return v1beta1.NewVhostLister(f.Informer().GetIndexer())
+func (f *vhostInformer) Lister() rabbitmqcomv1beta1.VhostLister {
+	return rabbitmqcomv1beta1.NewVhostLister(f.Informer().GetIndexer())
 }

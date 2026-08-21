@@ -45,7 +45,7 @@ import (
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 
-	. "knative.dev/pkg/reconciler/testing"
+	. "knative.dev/pkg/reconciler/testing" //nolint:staticcheck // dot import is the standard knative reconciler-testing convention
 )
 
 const (

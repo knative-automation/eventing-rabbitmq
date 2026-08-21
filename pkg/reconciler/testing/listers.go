@@ -208,7 +208,7 @@ func (l *Listers) GetRoleBindingLister() rbacv1listers.RoleBindingLister {
 }
 
 func (l *Listers) GetEndpointsLister() corev1listers.EndpointsLister {
-	return corev1listers.NewEndpointsLister(l.indexerFor(&corev1.Endpoints{}))
+	return corev1listers.NewEndpointsLister(l.indexerFor(&corev1.Endpoints{})) //nolint:staticcheck // mirrors upstream knative testing infra; EndpointSlice migration tracked separately
 }
 
 func (l *Listers) GetEndpointSliceLister() discoveryv1listers.EndpointSliceLister {

@@ -147,7 +147,7 @@ func init() {
 }
 
 func TestReconcile(t *testing.T) {
-	table := TableTest{{
+	table := TableTest{{ //nolint:prealloc // literal base cases are extended per broker config below; preallocation isn't practical
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
 		Key: "too/many/parts",

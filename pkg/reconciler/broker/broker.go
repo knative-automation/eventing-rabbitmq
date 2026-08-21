@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -372,7 +372,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 		RabbitmqClusterReference: clusterRef,
 		Owner:                    *kmeta.NewControllerRef(b),
 		Labels:                   rabbit.Labels(b, nil, nil),
-		DLXName:                  pointer.String(args.Name),
+		DLXName:                  ptr.To(args.Name),
 		BrokerUID:                string(b.GetUID()),
 	})
 	if err != nil {
@@ -422,7 +422,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 	PropagateIngressAvailability(&b.Status, ingressEpSlices)
 
 	b.Status.SetAddress(&duckv1.Addressable{
-		Name: pointer.String("http"),
+		Name: ptr.To("http"),
 		URL: &apis.URL{
 			Scheme: "http",
 			Host:   network.GetServiceHostname(ingressSvc.Name, ingressSvc.Namespace),

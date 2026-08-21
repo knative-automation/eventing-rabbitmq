@@ -19,24 +19,24 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	apisrabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	versioned "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/third_party/pkg/client/informers/externalversions/internalinterfaces"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 )
 
 // PermissionInformer provides access to a shared informer and lister for
 // Permissions.
 type PermissionInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.PermissionLister
+	Lister() rabbitmqcomv1beta1.PermissionLister
 }
 
 type permissionInformer struct {
@@ -57,21 +57,33 @@ func NewPermissionInformer(client versioned.Interface, namespace string, resyncP
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredPermissionInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Permissions(namespace).List(context.TODO(), options)
+				return client.RabbitmqV1beta1().Permissions(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().Permissions(namespace).Watch(context.TODO(), options)
+				return client.RabbitmqV1beta1().Permissions(namespace).Watch(context.Background(), options)
 			},
-		},
-		&rabbitmqcomv1beta1.Permission{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Permissions(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().Permissions(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apisrabbitmqcomv1beta1.Permission{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *permissionInformer) defaultInformer(client versioned.Interface, resyncP
 }
 
 func (f *permissionInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&rabbitmqcomv1beta1.Permission{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisrabbitmqcomv1beta1.Permission{}, f.defaultInformer)
 }
 
-func (f *permissionInformer) Lister() v1beta1.PermissionLister {
-	return v1beta1.NewPermissionLister(f.Informer().GetIndexer())
+func (f *permissionInformer) Lister() rabbitmqcomv1beta1.PermissionLister {
+	return rabbitmqcomv1beta1.NewPermissionLister(f.Informer().GetIndexer())
 }

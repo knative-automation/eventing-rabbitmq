@@ -19,24 +19,24 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	apisrabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	versioned "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/third_party/pkg/client/informers/externalversions/internalinterfaces"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 )
 
 // SchemaReplicationInformer provides access to a shared informer and lister for
 // SchemaReplications.
 type SchemaReplicationInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.SchemaReplicationLister
+	Lister() rabbitmqcomv1beta1.SchemaReplicationLister
 }
 
 type schemaReplicationInformer struct {
@@ -57,21 +57,33 @@ func NewSchemaReplicationInformer(client versioned.Interface, namespace string, 
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredSchemaReplicationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().SchemaReplications(namespace).List(context.TODO(), options)
+				return client.RabbitmqV1beta1().SchemaReplications(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RabbitmqV1beta1().SchemaReplications(namespace).Watch(context.TODO(), options)
+				return client.RabbitmqV1beta1().SchemaReplications(namespace).Watch(context.Background(), options)
 			},
-		},
-		&rabbitmqcomv1beta1.SchemaReplication{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().SchemaReplications(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.RabbitmqV1beta1().SchemaReplications(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apisrabbitmqcomv1beta1.SchemaReplication{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *schemaReplicationInformer) defaultInformer(client versioned.Interface, 
 }
 
 func (f *schemaReplicationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&rabbitmqcomv1beta1.SchemaReplication{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisrabbitmqcomv1beta1.SchemaReplication{}, f.defaultInformer)
 }
 
-func (f *schemaReplicationInformer) Lister() v1beta1.SchemaReplicationLister {
-	return v1beta1.NewSchemaReplicationLister(f.Informer().GetIndexer())
+func (f *schemaReplicationInformer) Lister() rabbitmqcomv1beta1.SchemaReplicationLister {
+	return rabbitmqcomv1beta1.NewSchemaReplicationLister(f.Informer().GetIndexer())
 }

@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	v1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
+	rabbitmqcomv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 // VhostLister helps list Vhosts.
@@ -30,7 +30,7 @@ import (
 type VhostLister interface {
 	// List lists all Vhosts in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Vhost, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Vhost, err error)
 	// Vhosts returns an object that can list and get Vhosts.
 	Vhosts(namespace string) VhostNamespaceLister
 	VhostListerExpansion
@@ -38,25 +38,17 @@ type VhostLister interface {
 
 // vhostLister implements the VhostLister interface.
 type vhostLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Vhost]
 }
 
 // NewVhostLister returns a new VhostLister.
 func NewVhostLister(indexer cache.Indexer) VhostLister {
-	return &vhostLister{indexer: indexer}
-}
-
-// List lists all Vhosts in the indexer.
-func (s *vhostLister) List(selector labels.Selector) (ret []*v1beta1.Vhost, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Vhost))
-	})
-	return ret, err
+	return &vhostLister{listers.New[*rabbitmqcomv1beta1.Vhost](indexer, rabbitmqcomv1beta1.Resource("vhost"))}
 }
 
 // Vhosts returns an object that can list and get Vhosts.
 func (s *vhostLister) Vhosts(namespace string) VhostNamespaceLister {
-	return vhostNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return vhostNamespaceLister{listers.NewNamespaced[*rabbitmqcomv1beta1.Vhost](s.ResourceIndexer, namespace)}
 }
 
 // VhostNamespaceLister helps list and get Vhosts.
@@ -64,36 +56,15 @@ func (s *vhostLister) Vhosts(namespace string) VhostNamespaceLister {
 type VhostNamespaceLister interface {
 	// List lists all Vhosts in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Vhost, err error)
+	List(selector labels.Selector) (ret []*rabbitmqcomv1beta1.Vhost, err error)
 	// Get retrieves the Vhost from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.Vhost, error)
+	Get(name string) (*rabbitmqcomv1beta1.Vhost, error)
 	VhostNamespaceListerExpansion
 }
 
 // vhostNamespaceLister implements the VhostNamespaceLister
 // interface.
 type vhostNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Vhosts in the indexer for a given namespace.
-func (s vhostNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.Vhost, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Vhost))
-	})
-	return ret, err
-}
-
-// Get retrieves the Vhost from the indexer for a given namespace and name.
-func (s vhostNamespaceLister) Get(name string) (*v1beta1.Vhost, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("vhost"), name)
-	}
-	return obj.(*v1beta1.Vhost), nil
+	listers.ResourceIndexer[*rabbitmqcomv1beta1.Vhost]
 }

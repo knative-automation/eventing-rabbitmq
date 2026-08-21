@@ -117,7 +117,7 @@ func RabbitMQClusterConnectionSecretUri(ctx context.Context, t feature.T) {
 func patchConnectionSecret(ctx context.Context, namespace string, secretName string, username string, password string) error {
 	var secret *corev1.Secret
 	var err error
-	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
 		secret, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -147,7 +147,7 @@ func patchConnectionSecret(ctx context.Context, namespace string, secretName str
 func RabbitMQClusterReady(ctx context.Context, t feature.T) {
 	namespace := environment.FromContext(ctx).Namespace()
 	lastMsg := ""
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, interval, timeout, true, func(ctx context.Context) (bool, error) {
 		conditions, err := getConditions(ctx, namespace)
 		if err != nil {
 			if apierrors.IsNotFound(err) {

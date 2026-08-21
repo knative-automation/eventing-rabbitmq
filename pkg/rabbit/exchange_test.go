@@ -24,7 +24,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
@@ -179,8 +179,8 @@ func TestNewExchange(t *testing.T) {
 						APIVersion:         "sources.knative.dev/v1alpha1",
 						Name:               sourceName,
 						UID:                sourceUID,
-						Controller:         pointer.Bool(true),
-						BlockOwnerDeletion: pointer.Bool(true),
+						Controller:         ptr.To(true),
+						BlockOwnerDeletion: ptr.To(true),
 					},
 				},
 				Labels: map[string]string{

@@ -36,6 +36,12 @@ type ShovelSpec struct {
 	SourcePrefetchCount           int    `json:"srcPrefetchCount,omitempty"`
 	DestinationAddForwardHeaders  bool   `json:"destAddForwardHeaders,omitempty"`
 	DestinationAddTimestampHeader bool   `json:"destAddTimestampHeader,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	SourceQueueArgs *runtime.RawExtension `json:"srcQueueArgs,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationQueueArgs *runtime.RawExtension `json:"destQueueArgs,omitempty"`
 
 	// +kubebuilder:validation:Enum=amqp091;amqp10
 	DestinationProtocol string `json:"destProtocol,omitempty"`
@@ -78,6 +84,11 @@ type ShovelSpec struct {
 	SourceConsumerArgs *runtime.RawExtension `json:"srcConsumerArgs,omitempty"`
 	// amqp10 configuration; required if srcProtocol is amqp10
 	SourceAddress string `json:"srcAddress,omitempty"`
+	// DeletionPolicy defines the behavior of shovel in the RabbitMQ cluster when the corresponding custom resource is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
 }
 
 // ShovelStatus defines the observed state of Shovel
@@ -90,7 +101,7 @@ type ShovelStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Shovel is the Schema for the shovels API

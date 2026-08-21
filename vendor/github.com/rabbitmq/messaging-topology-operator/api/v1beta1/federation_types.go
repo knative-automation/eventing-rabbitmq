@@ -35,6 +35,24 @@ type FederationSpec struct {
 	TrustUserId    bool   `json:"trustUserId,omitempty"`
 	Exchange       string `json:"exchange,omitempty"`
 	Queue          string `json:"queue,omitempty"`
+	// DeletionPolicy defines the behavior of federation in the RabbitMQ cluster when the corresponding custom resource is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
+	// The queue type of the internal upstream queue used by exchange federation.
+	// Defaults to classic (a single replica queue type). Set to quorum to use a replicated queue type.
+	// Changing the queue type will delete and recreate the upstream queue by default.
+	// This may lead to messages getting lost or not routed anywhere during the re-declaration.
+	// To avoid that, set resource-cleanup-mode key to never.
+	// This requires manually deleting the old upstream queue so that it can be recreated with the new type.
+	// +kubebuilder:validation:Enum=classic;quorum
+	QueueType string `json:"queueType,omitempty"`
+	// Whether to delete the internal upstream queue when federation links stop.
+	// By default, the internal upstream queue is deleted immediately when a federation link stops.
+	// Set to never to keep the upstream queue around and collect messages even when changing federation configuration.
+	// +kubebuilder:validation:Enum=default;never
+	ResourceCleanupMode string `json:"resourceCleanupMode,omitempty"`
 }
 
 // FederationStatus defines the observed state of Federation
@@ -47,7 +65,7 @@ type FederationStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Federation is the Schema for the federations API

@@ -106,9 +106,10 @@ func Test_WatchConnectionsRabbitMQ(t *testing.T) {
 			rabbitMQHelper.createConnectionAndChannel(context.TODO(), "amqp://localhost:5672/%2f", nil, ValidDial)
 			go func() {
 				time.Sleep(time.Millisecond * 200)
-				if tt.endFunc == "connection" {
+				switch tt.endFunc {
+				case "connection":
 					rabbitMQHelper.Connection.(*RabbitMQConnection).connection.(*RabbitMQConnectionMock).NotifyCloseChannel <- amqp091.ErrClosed
-				} else if tt.endFunc == "channel" {
+				case "channel":
 					rabbitMQHelper.Channel.(*RabbitMQChannelMock).NotifyCloseChannel <- amqp091.ErrClosed
 				}
 				rabbitMQHelper.Close()

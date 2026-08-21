@@ -32,6 +32,10 @@ type QueueSpec struct {
 	Durable bool `json:"durable,omitempty"`
 	// when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
 	AutoDelete bool `json:"autoDelete,omitempty"`
+	// when set to true, queues are deleted only if empty.
+	DeleteIfEmpty bool `json:"deleteIfEmpty,omitempty"`
+	// when set to true, queues are delete only if they have no consumer.
+	DeleteIfUnused bool `json:"deleteIfUnused,omitempty"`
 	// Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
 	// Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
 	// +kubebuilder:validation:Type=object
@@ -41,6 +45,11 @@ type QueueSpec struct {
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	// DeletionPolicy defines the behavior of queue in the RabbitMQ cluster when the corresponding custom resource is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
 }
 
 // QueueStatus defines the observed state of Queue
@@ -53,7 +62,7 @@ type QueueStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Queue is the Schema for the queues API
